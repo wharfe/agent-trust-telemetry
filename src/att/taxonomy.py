@@ -29,10 +29,9 @@ class ProvenanceSubclass(str, Enum):
 
     TOOL_METADATA_DRIFT = "tool_metadata_drift"
     PARENT_FLAGGED_PROPAGATION = "parent_flagged_propagation"
-    # Out of scope for MVP:
-    # DECLARED_PROVENANCE_MISMATCH = "declared_provenance_mismatch"
-    # CAPABILITY_PROVENANCE_MISMATCH = "capability_provenance_mismatch"
-    # INSTRUCTION_LINEAGE_MISMATCH = "instruction_lineage_mismatch"
+    # Layer 3 additions
+    ROLE_TRANSITION_DRIFT = "role_transition_drift"
+    HISTORY_INCONSISTENCY = "history_inconsistency"
 
 
 class Severity(str, Enum):

@@ -20,6 +20,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 # Add src to path for standalone execution
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -62,7 +63,7 @@ def _list_scenarios() -> list[str]:
     return scenarios
 
 
-def _load_scenario(name: str) -> list[dict]:
+def _load_scenario(name: str) -> list[dict[str, Any]]:
     """Load scenario messages from JSONL file."""
     path = SCENARIOS_DIR / f"{name}.jsonl"
     if not path.exists() and name == "tool_poisoning" and LEGACY_SCENARIO.exists():
@@ -86,7 +87,7 @@ def _print_header(scenario_name: str) -> None:
     print()
 
 
-def _print_step(step: int, envelope: dict, result: dict) -> None:
+def _print_step(step: int, envelope: dict[str, Any], result: dict[str, Any]) -> None:
     action = result["recommended_action"]
     color = ACTION_COLORS.get(action, RESET)
     score = result["risk_score"]
@@ -133,7 +134,7 @@ def _print_step(step: int, envelope: dict, result: dict) -> None:
     print()
 
 
-def _print_summary(results: list[dict]) -> None:
+def _print_summary(results: list[dict[str, Any]]) -> None:
     print(f"{BOLD}{'=' * 72}{RESET}")
     print(f"{BOLD}  Summary{RESET}")
     print(f"{BOLD}{'=' * 72}{RESET}")
@@ -164,7 +165,7 @@ def _setup_otel() -> tuple[bool, object | None]:
     """Initialize OTel tracing. Returns (enabled, tracer)."""
     try:
         from opentelemetry import trace
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # type: ignore[import-not-found]
             OTLPSpanExporter,
         )
         from opentelemetry.sdk.trace import TracerProvider
@@ -190,15 +191,15 @@ def run_scenario(
     pipeline: EvaluationPipeline,
     otel_enabled: bool = False,
     tracer: object | None = None,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Run a single demo scenario and return results."""
     envelopes = _load_scenario(name)
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     _print_header(name)
 
     for i, envelope in enumerate(envelopes, 1):
         if otel_enabled and tracer is not None:
-            with tracer.start_as_current_span(  # type: ignore[union-attr]
+            with tracer.start_as_current_span(  # type: ignore[attr-defined]
                 f"evaluate-{name}-msg-{i}",
                 attributes={
                     "message.sender": envelope["sender"],
@@ -221,7 +222,7 @@ def run_scenario(
 def run_demo(
     scenario: str = "tool_poisoning",
     otel_enabled: bool = False,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Run one or all demo scenarios and return results."""
     otel_active = False
     tracer = None
@@ -230,7 +231,7 @@ def run_demo(
 
     scenario_names = _list_scenarios() if scenario == "all" else [scenario]
 
-    all_results: list[dict] = []
+    all_results: list[dict[str, Any]] = []
     for name in scenario_names:
         # Each scenario gets a fresh pipeline to reset metadata tracker state
         pipeline = EvaluationPipeline(otel_enabled=otel_active)

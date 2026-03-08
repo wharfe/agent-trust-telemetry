@@ -182,6 +182,13 @@ def _build_anomaly_indicators(findings: list[Finding]) -> list[dict[str, Any]]:
                     subclass = ProvenanceSubclass.PARENT_FLAGGED_PROPAGATION.value
                 elif f.matched_field == "__tool_metadata_drift__":
                     subclass = ProvenanceSubclass.TOOL_METADATA_DRIFT.value
+                elif f.matched_field == "__role_transition_drift__":
+                    subclass = ProvenanceSubclass.ROLE_TRANSITION_DRIFT.value
+                elif (
+                    f.anomaly_indicator == "provenance_or_metadata_drift"
+                    and f.rule_id.startswith("rule:history_inconsistency")
+                ):
+                    subclass = ProvenanceSubclass.HISTORY_INCONSISTENCY.value
                 entry: dict[str, Any] = {
                     "name": f.anomaly_indicator,
                     "confidence": f.confidence,

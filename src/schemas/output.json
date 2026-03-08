@@ -20,7 +20,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "0.1",
+      "enum": ["0.1", "0.2"],
       "description": "Schema version for forward compatibility."
     },
     "message_id": {
@@ -108,6 +108,8 @@
                 "enum": [
                   "tool_metadata_drift",
                   "parent_flagged_propagation",
+                  "role_transition_drift",
+                  "history_inconsistency",
                   "declared_provenance_mismatch",
                   "capability_provenance_mismatch",
                   "instruction_lineage_mismatch"
@@ -148,6 +150,54 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "OTel span/event references. Optional — populated when OTel export is enabled."
+    },
+    "session_context": {
+      "type": "object",
+      "description": "Layer 3 session-level context. Present only when multi-hop inheritance is enabled.",
+      "required": ["session_risk_score", "distinct_policy_classes", "flagged_ancestors", "role_transitions"],
+      "properties": {
+        "session_risk_score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Risk score including session accumulation bonus."
+        },
+        "distinct_policy_classes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of distinct policy classes detected in this session."
+        },
+        "flagged_ancestors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["message_id", "hops", "risk_score"],
+            "properties": {
+              "message_id": { "type": "string" },
+              "hops": { "type": "integer", "minimum": 1 },
+              "risk_score": { "type": "integer", "minimum": 0, "maximum": 100 }
+            },
+            "additionalProperties": false
+          },
+          "description": "Flagged ancestor messages in the parent chain."
+        },
+        "role_transitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["sender", "from", "to", "flagged"],
+            "properties": {
+              "sender": { "type": "string" },
+              "from": { "type": "string" },
+              "to": { "type": "string" },
+              "flagged": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          },
+          "description": "Role transitions observed in this session."
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

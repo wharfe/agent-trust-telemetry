@@ -34,7 +34,7 @@ class TestPipelineBasic:
         result = pipeline.evaluate(_envelope("Just a normal message"))
         assert result["recommended_action"] == "observe"
         assert result["risk_score"] == 0
-        assert result["schema_version"] == "0.1"
+        assert result["schema_version"] == "0.2"
 
     def test_override_detected(self):
         pipeline = EvaluationPipeline()

@@ -1,6 +1,6 @@
 # Demo Scenarios
 
-agent-trust-telemetry の検出能力を示す4つの攻撃シナリオです。
+agent-trust-telemetry の検出能力を示す6つの攻撃シナリオです。
 
 ## Quick Start
 
@@ -89,14 +89,53 @@ P0 + critical の組み合わせで **block**（最高レベル）が発動。
 **ポイント**: Step 3 は自身のコンテンツ（SQL injection）と親メッセージの汚染の
 両方が検出され、risk_score が 85 に上昇。複合的な脅威の重畳を示す。
 
+### 5. multi_hop_chain（Layer 3）
+
+**3エージェント連鎖汚染 — multi-hop 伝播の追跡**
+
+悪意ある MCP サーバーがコード分析ツールの description に権限昇格指示を埋め込む。
+汚染が Agent A → B → C → D と4段階で伝播し、各ホップで confidence が減衰しながらも
+quarantine が維持される。
+
+| Step | Flow | Detection | Action |
+|------|------|-----------|--------|
+| 1 | human → agent_a | — | observe |
+| 2 | mcp_compromised → agent_a | instruction_override + hidden_instruction | **warn** (80) |
+| 3 | agent_a → agent_b | parent_flagged_propagation (hop 1) | **quarantine** (70) |
+| 4 | agent_b → agent_c | parent_flagged_propagation (hop 2) | **quarantine** (70) |
+| 5 | agent_c → agent_d | parent_flagged_propagation (hop 3) | **quarantine** (70) |
+
+**ポイント**: `max_hops: 3` 設定により、3ホップ先まで汚染を追跡。
+`session_context.flagged_ancestors` で汚染源の完全なチェーンを確認可能。
+
+### 6. role_transition_drift（Layer 3）
+
+**エージェントの不正 role 遷移 + セッション累積リスク**
+
+Agent A が content → system への不正な role 遷移を行い、自身を特権エージェントとして再定義。
+その後、認証情報の取得を別エージェントに指示する。
+
+| Step | Flow | Detection | Action |
+|------|------|-----------|--------|
+| 1 | human → agent_a (content) | — | observe |
+| 2 | agent_a → human (system) | history_inconsistency + **role_transition_drift** | **warn** (80) |
+| 3 | agent_a → agent_b (content) | secret_access + parent_flagged + role_transition_drift | **quarantine** (80) |
+| 4 | agent_b → agent_a | parent_flagged_propagation | **quarantine** (70) |
+
+**ポイント**: Step 2 で content → system の不正遷移を即座に検知。
+Step 3 では role_transition_drift と parent_flagged_propagation の両方が発火し、
+セッション全体のリスクが累積的に上昇。
+
 ## Scenario Files
 
 ```
 demo/scenarios/
-├── tool_poisoning.jsonl       # MCP tool description poisoning
-├── metadata_drift.jsonl       # Tool description mutation mid-session
-├── data_exfiltration.jsonl    # Secret extraction + exfiltration chain
-└── privilege_escalation.jsonl # Privilege escalation + SQL injection
+├── tool_poisoning.jsonl         # MCP tool description poisoning
+├── metadata_drift.jsonl         # Tool description mutation mid-session
+├── data_exfiltration.jsonl      # Secret extraction + exfiltration chain
+├── privilege_escalation.jsonl   # Privilege escalation + SQL injection
+├── multi_hop_chain.jsonl        # Layer 3: 3-hop contamination propagation
+└── role_transition_drift.jsonl  # Layer 3: unauthorized role transition
 ```
 
 各 `.jsonl` ファイルは Message Envelope Schema に準拠したメッセージの連鎖です。

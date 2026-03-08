@@ -1,0 +1,37 @@
+# History inconsistency detection rules
+# Detects self-redefinition attempts that contradict established role/instructions.
+# Part of Layer 3 session-level analysis.
+
+- id: "rule:history_inconsistency:001"
+  description: "Self-redefinition attempt contradicting established role"
+  targets:
+    - field: "content"
+  pattern: "(you are now|from now on|your (real|true|actual) (role|purpose|instruction))"
+  match_type: "regex_case_insensitive"
+  anomaly_indicator: "provenance_or_metadata_drift"
+  confidence: 0.75
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:history_inconsistency:002"
+  description: "Attempt to override established system constraints"
+  targets:
+    - field: "content"
+  pattern: "(forget (all |everything )?(about )?(your |previous |prior |all )*(instructions|rules|constraints|guidelines|restrictions))"
+  match_type: "regex_case_insensitive"
+  anomaly_indicator: "provenance_or_metadata_drift"
+  confidence: 0.80
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:history_inconsistency:003"
+  description: "Role reassignment via content injection"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(new (system )?(instructions|prompt|rules|role)|switch(ing)? (to|into) .{0,30}(mode|role|persona))"
+  match_type: "regex_case_insensitive"
+  anomaly_indicator: "provenance_or_metadata_drift"
+  confidence: 0.70
+  severity: "medium"
+  weight: 0.9

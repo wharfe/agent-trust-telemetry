@@ -143,15 +143,23 @@ bonus = min(0.2, 0.05 * (len(findings) - 1))
 risk_score = min(100, round((base + bonus) * 100))
 ```
 
-### One-hop Risk Inheritance
+### Multi-hop Risk Inheritance (Layer 3)
 
 ```yaml
 risk_inheritance:
   enabled: true
   parent_action_threshold: ["warn", "quarantine", "block"]
-  propagated_confidence: 0.7   # 固定値（ADR-002 で決定済み）
-  max_hops: 1
+  propagated_confidence: 0.7   # base confidence（ADR-002 で決定済み）
+  max_hops: 3          # 1〜10（デフォルト: 3）
+  decay_per_hop: 0.15  # ホップごとの confidence 減衰
+  session_store: "memory"  # "memory"（将来: "sqlite"）
 ```
+
+**Confidence 減衰:** `max(0.0, base_confidence - (hops - 1) * decay_per_hop)`
+- hop 1: 0.70, hop 2: 0.55, hop 3: 0.40, hop 4: 0.25
+
+**Session Accumulation:** 複数 policy class 検知時にスコアボーナス
+- `bonus = min(15, (distinct_classes - 1) * 5)`
 
 ---
 
@@ -241,10 +249,13 @@ agent-trust-telemetry/
 │       ├── taxonomy.py
 │       ├── scorer.py
 │       ├── inheritance.py
+│       ├── session_store.py
+│       ├── session_analyzer.py
 │       ├── rules/
 │       │   └── builtin/
 │       │       ├── instruction_override.yaml
-│       │       └── hidden_instruction.yaml
+│       │       ├── hidden_instruction.yaml
+│       │       └── history_inconsistency.yaml
 │       └── exporters/
 │           └── otel.py
 ├── tests/
