@@ -1,23 +1,23 @@
 ---
 name: Feature Request
-about: 新機能やルールの提案
+about: Propose a new feature or detection rule
 title: ''
 labels: enhancement
 assignees: ''
 ---
 
-## 概要
+## Summary
 
-提案する機能を簡潔に記述してください。
+Describe the proposed feature briefly.
 
-## モチベーション
+## Motivation
 
-なぜこの機能が必要かを説明してください。
+Why is this feature needed?
 
-## 提案する解決策
+## Proposed Solution
 
-実装のイメージがあれば記述してください。
+Describe how it could be implemented, if you have ideas.
 
-## 代替案
+## Alternatives Considered
 
-検討した他のアプローチがあれば記述してください。
+Any other approaches you considered.

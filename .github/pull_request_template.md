@@ -1,19 +1,19 @@
-## 概要
+## Summary
 
-変更内容を簡潔に記述してください。
+Describe your changes briefly.
 
-## 変更の種類
+## Type of Change
 
-- [ ] バグ修正
-- [ ] 新機能
-- [ ] リファクタリング
-- [ ] ドキュメント
-- [ ] テスト
-- [ ] その他
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactoring
+- [ ] Documentation
+- [ ] Tests
+- [ ] Other
 
-## チェックリスト
+## Checklist
 
-- [ ] `ruff check src/ tests/` がパスすること
-- [ ] `mypy src/` がパスすること
-- [ ] `pytest` がパスすること
-- [ ] 新しいルールには正例・負例テストがあること
+- [ ] `ruff check src/ tests/` passes
+- [ ] `mypy src/` passes
+- [ ] `pytest` passes
+- [ ] New detection rules include positive and negative test cases

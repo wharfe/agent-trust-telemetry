@@ -1,30 +1,30 @@
 ---
 name: Bug Report
-about: バグを報告する
+about: Report a bug
 title: ''
 labels: bug
 assignees: ''
 ---
 
-## 概要
+## Summary
 
-バグの内容を簡潔に記述してください。
+Describe the bug briefly.
 
-## 再現手順
+## Steps to Reproduce
 
 1.
 2.
 3.
 
-## 期待される動作
+## Expected Behavior
 
-正しく動作した場合にどうなるべきかを記述してください。
+What should happen.
 
-## 実際の動作
+## Actual Behavior
 
-実際に何が起きたかを記述してください。
+What actually happens.
 
-## 環境
+## Environment
 
 - OS:
 - Python:
