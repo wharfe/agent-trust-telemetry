@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from att.pipeline import EvaluationPipeline
 
 
@@ -193,3 +195,33 @@ class TestPipelineEndToEnd:
             for ai in result_b["anomaly_indicators"]
         )
         assert result_b["recommended_action"] in ("quarantine", "block")
+
+
+class TestPipelineInputValidation:
+    """Resilience against non-dict envelope inputs."""
+
+    @pytest.mark.parametrize(
+        "bad_input",
+        [
+            [],
+            [1, 2, 3],
+            "a string",
+            123,
+            None,
+            True,
+        ],
+    )
+    def test_non_dict_envelope_raises_type_error(self, bad_input):
+        pipeline = EvaluationPipeline()
+        with pytest.raises(TypeError, match="envelope must be a dict"):
+            pipeline.evaluate(bad_input)
+
+    def test_non_dict_tool_context_does_not_crash(self):
+        pipeline = EvaluationPipeline()
+        result = pipeline.evaluate(_envelope(tool_context="not a dict"))
+        assert result["recommended_action"] == "observe"
+
+    def test_tool_context_as_list_does_not_crash(self):
+        pipeline = EvaluationPipeline()
+        result = pipeline.evaluate(_envelope(tool_context=[1, 2, 3]))
+        assert result["recommended_action"] == "observe"

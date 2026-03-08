@@ -45,6 +45,11 @@ class EvaluationPipeline:
 
         Returns the output contract dict.
         """
+        if not isinstance(envelope, dict):
+            raise TypeError(
+                f"envelope must be a dict, got {type(envelope).__name__}"
+            )
+
         # Layer 1: pattern matching
         findings: list[Finding] = evaluate_message(envelope, self._rules)
 

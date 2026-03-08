@@ -51,8 +51,15 @@ def _process_stream(pipeline: EvaluationPipeline, source: Any) -> None:
         line = line.strip()
         if not line:
             continue
-        envelope = json.loads(line)
-        result = pipeline.evaluate(envelope)
+        try:
+            envelope = json.loads(line)
+            result = pipeline.evaluate(envelope)
+        except (TypeError, json.JSONDecodeError) as exc:
+            print(
+                json.dumps({"error": str(exc), "raw_input": line[:200]}, ensure_ascii=False),
+                file=sys.stderr,
+            )
+            continue
 
         if result["recommended_action"] == "quarantine":
             _quarantine_list[result["message_id"]] = result
