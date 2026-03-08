@@ -1,0 +1,51 @@
+# Detection rules for privilege_escalation_attempt policy class.
+# These rules detect attempts to gain elevated privileges, bypass access
+# controls, or assume unauthorized roles.
+
+- id: "rule:privilege_escalation:001"
+  description: "Detects attempts to gain admin or root access"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(give|grant|assign|elevate|set) .{0,20}(admin|root|superuser|sudo|administrator|owner|full) (access|privileges|permissions|rights|role)"
+  match_type: "regex_case_insensitive"
+  policy_class: "privilege_escalation_attempt"
+  confidence: 0.85
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:privilege_escalation:002"
+  description: "Detects bypass of access controls or restrictions"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(bypass|skip|circumvent|disable|turn off|deactivate|remove) (the |all |any )?(access control|authentication|authorization|permission check|security check|safety check|content filter|guardrail|restriction|limitation|safety)"
+  match_type: "regex_case_insensitive"
+  policy_class: "privilege_escalation_attempt"
+  confidence: 0.85
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:privilege_escalation:003"
+  description: "Detects requests to run in unrestricted or privileged mode"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(run|operate|execute|switch to|enter|enable) (in )?(unrestricted|privileged|unfiltered|uncensored|unlimited|god|developer|debug|maintenance) mode"
+  match_type: "regex_case_insensitive"
+  policy_class: "privilege_escalation_attempt"
+  confidence: 0.80
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:privilege_escalation:004"
+  description: "Detects attempts to modify own capabilities or permissions"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(modify|change|update|override|expand) (your |my |the )?(own )?(capabilities|permissions|access level|privilege|authority|scope|role)"
+  match_type: "regex_case_insensitive"
+  policy_class: "privilege_escalation_attempt"
+  confidence: 0.75
+  severity: "medium"
+  weight: 1.0

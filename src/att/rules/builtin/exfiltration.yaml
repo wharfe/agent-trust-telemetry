@@ -1,0 +1,51 @@
+# Detection rules for exfiltration_attempt policy class.
+# These rules detect attempts to send data to external endpoints,
+# encode data for extraction, or redirect output to unauthorized destinations.
+
+- id: "rule:exfiltration:001"
+  description: "Detects instructions to send data to external URLs or endpoints"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(send|post|forward|transmit|upload|exfiltrate|transfer|submit|relay) .*(to |at |via )(https?://|http://|ftp://|ws://|wss://)"
+  match_type: "regex_case_insensitive"
+  policy_class: "exfiltration_attempt"
+  confidence: 0.75
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:exfiltration:002"
+  description: "Detects webhook or callback exfiltration patterns"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(call|invoke|trigger|hit|fetch|request) .*(webhook|callback|endpoint|external (api|server|service|url))"
+  match_type: "regex_case_insensitive"
+  policy_class: "exfiltration_attempt"
+  confidence: 0.70
+  severity: "medium"
+  weight: 1.0
+
+- id: "rule:exfiltration:003"
+  description: "Detects encoding data for covert extraction"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(encode|embed|hide|conceal|smuggle) .*(in|into|within|inside) .*(url|image|response|output|metadata|header|query|parameter)"
+  match_type: "regex_case_insensitive"
+  policy_class: "exfiltration_attempt"
+  confidence: 0.75
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:exfiltration:004"
+  description: "Detects attempts to forward all user data or conversation"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(forward|copy|send|include|attach|append) (all |the |every )?(user data|conversation|chat history|messages|context|session data|input|prompts|user input)"
+  match_type: "regex_case_insensitive"
+  policy_class: "exfiltration_attempt"
+  confidence: 0.80
+  severity: "high"
+  weight: 1.0

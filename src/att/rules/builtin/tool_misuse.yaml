@@ -1,0 +1,52 @@
+# Detection rules for tool_misuse_attempt policy class.
+# These rules detect attempts to misuse tools for unauthorized purposes,
+# such as executing arbitrary commands, accessing files, or making calls
+# outside the intended scope.
+
+- id: "rule:tool_misuse:001"
+  description: "Detects attempts to execute arbitrary shell commands"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: '(run|execute|eval|exec|spawn|invoke) .*(shell|bash|sh|cmd|command|terminal|subprocess|os\.system|os\.popen)'
+  match_type: "regex_case_insensitive"
+  policy_class: "tool_misuse_attempt"
+  confidence: 0.80
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:tool_misuse:002"
+  description: "Detects requests to use a tool for unintended purposes"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(use|abuse|exploit|leverage|repurpose) (the |this )?(tool|function|api|endpoint|capability) (to|for) .*(delete|destroy|modify|overwrite|drop|truncate|corrupt|wipe)"
+  match_type: "regex_case_insensitive"
+  policy_class: "tool_misuse_attempt"
+  confidence: 0.80
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:tool_misuse:003"
+  description: "Detects attempts to call tools not in the approved list"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(call|invoke|use|access|execute) .*(unauthorized|unapproved|restricted|forbidden|blocked|disabled|hidden|internal|private) (tool|function|api|endpoint|command|method)"
+  match_type: "regex_case_insensitive"
+  policy_class: "tool_misuse_attempt"
+  confidence: 0.75
+  severity: "medium"
+  weight: 1.0
+
+- id: "rule:tool_misuse:004"
+  description: "Detects SQL injection or database manipulation via tools"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(DROP|DELETE FROM|TRUNCATE|ALTER|INSERT INTO|UPDATE .* SET) .*(TABLE|DATABASE|SCHEMA|INDEX|--|;)"
+  match_type: "regex_case_insensitive"
+  policy_class: "tool_misuse_attempt"
+  confidence: 0.80
+  severity: "critical"
+  weight: 1.0
