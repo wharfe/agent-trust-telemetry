@@ -1,0 +1,62 @@
+# Detection rules for instruction_override policy class.
+# These rules detect attempts to override, ignore, or replace prior instructions.
+
+- id: "rule:instruction_override:001"
+  description: "Detects common override phrases targeting prior instructions"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "ignore (previous|prior|all|above|earlier|preceding) instructions"
+  match_type: "regex_case_insensitive"
+  policy_class: "instruction_override"
+  confidence: 0.85
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:instruction_override:002"
+  description: "Detects discard/forget instruction patterns"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(discard|forget|disregard|override|overwrite) (all |any |the )?(previous|prior|above|earlier|preceding|existing|original|current) (instructions|rules|guidelines|directives|constraints|prompts)"
+  match_type: "regex_case_insensitive"
+  policy_class: "instruction_override"
+  confidence: 0.85
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:instruction_override:003"
+  description: "Detects new role assumption or identity override"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(you are now|from now on you are|act as|pretend to be|assume the role of|you must now act as|your new role is)"
+  match_type: "regex_case_insensitive"
+  policy_class: "instruction_override"
+  confidence: 0.70
+  severity: "medium"
+  weight: 1.0
+
+- id: "rule:instruction_override:004"
+  description: "Detects do-not-follow-rules type patterns"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(do not|don't|never) (follow|obey|adhere to|comply with|respect) (the |your |any )?(rules|guidelines|instructions|constraints|restrictions|policies|system prompt)"
+  match_type: "regex_case_insensitive"
+  policy_class: "instruction_override"
+  confidence: 0.80
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:instruction_override:005"
+  description: "Detects system prompt reset attempts"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(reset|clear|wipe|erase) (your |the )?(system prompt|system message|instructions|context|memory)"
+  match_type: "regex_case_insensitive"
+  policy_class: "instruction_override"
+  confidence: 0.80
+  severity: "high"
+  weight: 1.0

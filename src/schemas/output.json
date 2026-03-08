@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wharfe/agent-trust-telemetry/schemas/output.json",
+  "title": "Evaluation Output Contract",
+  "description": "Output schema for trust evaluation results.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "message_id",
+    "trace_id",
+    "session_id",
+    "evaluated_at",
+    "risk_score",
+    "severity",
+    "policy_classes",
+    "anomaly_indicators",
+    "evidence",
+    "recommended_action"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1",
+      "description": "Schema version for forward compatibility."
+    },
+    "message_id": {
+      "type": "string",
+      "pattern": "^msg:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Reference to the evaluated message."
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Trace identifier from the evaluated message."
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Session identifier from the evaluated message."
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the evaluation was performed."
+    },
+    "risk_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Operational triage score (0-100). Not a probability."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Expected impact severity. Does not necessarily correlate monotonically with risk_score."
+    },
+    "policy_classes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "confidence", "severity"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "instruction_override",
+              "privilege_escalation_attempt",
+              "secret_access_attempt",
+              "exfiltration_attempt",
+              "tool_misuse_attempt"
+            ],
+            "description": "Policy violation class name."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Classification confidence score."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "Severity of this specific finding."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Detected policy violation classes with confidence and severity."
+    },
+    "anomaly_indicators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "confidence", "severity"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "hidden_instruction_embedding",
+              "provenance_or_metadata_drift"
+            ],
+            "description": "Anomaly indicator name."
+          },
+          "subclass": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "tool_metadata_drift",
+                  "parent_flagged_propagation",
+                  "declared_provenance_mismatch",
+                  "capability_provenance_mismatch",
+                  "instruction_lineage_mismatch"
+                ]
+              },
+              { "type": "null" }
+            ],
+            "default": null,
+            "description": "Specific subclass for provenance_or_metadata_drift indicators."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Classification confidence score."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "Severity of this specific finding."
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Detected anomaly indicators with optional subclass."
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Human-readable explanations of score rationale."
+    },
+    "recommended_action": {
+      "type": "string",
+      "enum": ["observe", "warn", "quarantine", "block"],
+      "description": "Recommended response action based on evaluation."
+    },
+    "trace_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "OTel span/event references. Optional — populated when OTel export is enabled."
+    }
+  },
+  "additionalProperties": false
+}

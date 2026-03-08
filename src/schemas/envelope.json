@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/wharfe/agent-trust-telemetry/schemas/envelope.json",
+  "title": "Message Envelope",
+  "description": "Normalized message envelope for inter-agent communication trust telemetry.",
+  "type": "object",
+  "required": [
+    "message_id",
+    "timestamp",
+    "sender",
+    "receiver",
+    "channel",
+    "role",
+    "execution_phase",
+    "session_id",
+    "trace_id",
+    "turn_index",
+    "provenance",
+    "content_hash"
+  ],
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "pattern": "^msg:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "Unique message identifier in msg:uuid-v4 format."
+    },
+    "parent_message_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^msg:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        { "type": "null" }
+      ],
+      "default": null,
+      "description": "Parent message ID for tracing contamination inheritance. Null for session origin messages."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of message creation."
+    },
+    "sender": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the sending agent or component."
+    },
+    "receiver": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the receiving agent or component."
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["mcp", "a2a", "internal", "unknown"],
+      "description": "Communication channel type."
+    },
+    "role": {
+      "type": "string",
+      "enum": ["tool_call", "content", "system", "unknown"],
+      "description": "Message role in the conversation."
+    },
+    "execution_phase": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Agent execution phase. Extensible string — see docs/execution_phases.md for recommended values."
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Session identifier for grouping related messages."
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Trace identifier for distributed tracing correlation."
+    },
+    "turn_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero-based index of the conversation turn within the session."
+    },
+    "provenance": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "description": "Ordered list of upstream agent names in the message lineage."
+    },
+    "content": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "null" }
+      ],
+      "default": null,
+      "description": "Message body text. Optional but required for most policy class detection."
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "SHA-256 hash of the content field in sha256:hex format."
+    },
+    "tool_context": {
+      "type": "object",
+      "properties": {
+        "tool_name": {
+          "oneOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Name of the tool being invoked."
+        },
+        "description_raw": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Raw tool description text. Optional — omitting disables hidden_instruction_embedding detection on tool descriptions."
+        },
+        "description_hash": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "SHA-256 hash of description_raw in sha256:hex format."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Tool invocation context. Present when the message involves a tool call."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,74 @@
+# Detection rules for hidden_instruction_embedding anomaly indicator.
+# These rules detect sleeper instructions, obfuscation, and delayed activation patterns.
+
+- id: "rule:hidden_instruction_embedding:001"
+  description: "Detects invisible Unicode characters used to hide instructions"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "[\\x{200B}\\x{200C}\\x{200D}\\x{2060}\\x{FEFF}\\x{00AD}\\x{200E}\\x{200F}\\x{202A}-\\x{202E}\\x{2066}-\\x{2069}]"
+  match_type: "regex"
+  anomaly_indicator: "hidden_instruction_embedding"
+  confidence: 0.90
+  severity: "high"
+  weight: 1.0
+
+- id: "rule:hidden_instruction_embedding:002"
+  description: "Detects HTML/XML comment blocks that may hide instructions"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "<!--[\\s\\S]*?-->"
+  match_type: "regex"
+  anomaly_indicator: "hidden_instruction_embedding"
+  confidence: 0.60
+  severity: "medium"
+  weight: 1.0
+
+- id: "rule:hidden_instruction_embedding:003"
+  description: "Detects base64-encoded content that may contain hidden instructions"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "[A-Za-z0-9+/]{40,}={0,2}"
+  match_type: "regex"
+  anomaly_indicator: "hidden_instruction_embedding"
+  confidence: 0.40
+  severity: "low"
+  weight: 1.0
+
+- id: "rule:hidden_instruction_embedding:004"
+  description: "Detects markdown-hidden content patterns (white text, zero-size elements)"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(color:\\s*white|font-size:\\s*0|display:\\s*none|visibility:\\s*hidden|opacity:\\s*0)"
+  match_type: "regex_case_insensitive"
+  anomaly_indicator: "hidden_instruction_embedding"
+  confidence: 0.75
+  severity: "medium"
+  weight: 1.0
+
+- id: "rule:hidden_instruction_embedding:005"
+  description: "Detects encoded instruction markers (hex, unicode escapes)"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "(\\\\x[0-9a-fA-F]{2}){4,}|(\\\\u[0-9a-fA-F]{4}){3,}"
+  match_type: "regex"
+  anomaly_indicator: "hidden_instruction_embedding"
+  confidence: 0.65
+  severity: "medium"
+  weight: 1.0
+
+- id: "rule:hidden_instruction_embedding:006"
+  description: "Detects [SYSTEM] or similar meta-tags injected in content"
+  targets:
+    - field: "content"
+    - field: "tool_context.description_raw"
+  pattern: "\\[(SYSTEM|ADMIN|ROOT|INTERNAL|HIDDEN|SECRET)\\]"
+  match_type: "regex_case_insensitive"
+  anomaly_indicator: "hidden_instruction_embedding"
+  confidence: 0.70
+  severity: "medium"
+  weight: 1.0
