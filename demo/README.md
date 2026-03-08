@@ -66,7 +66,7 @@ description_hash の変化を `tool_metadata_drift` として検出。
 |------|------|-----------|--------|
 | 1 | human → coding_agent | — | observe |
 | 2 | mcp_code_search → coding_agent | secret_access(0.85) + hidden_instruction | **block** (90) |
-| 3 | coding_agent → reporting_agent | exfiltration(0.75) + parent_flagged | **quarantine** (70) |
+| 3 | coding_agent → reporting_agent | exfiltration(0.75) + parent_flagged | **quarantine** (80) |
 | 4 | reporting_agent → human | parent_flagged_propagation | **quarantine** (70) |
 
 **ポイント**: Step 2 で secret_access が severity=critical として検出され、
