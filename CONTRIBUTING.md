@@ -42,7 +42,7 @@ chore: update dev dependencies
 
 Detection rules live in `src/att/rules/builtin/` as YAML files. Each rule **must** have corresponding test cases (both positive and negative examples).
 
-See `docs/mvp-requirements-v0.3.md` Section 5 for the rule format specification.
+See `src/att/rules/builtin/` for examples of the rule format.
 
 ## Code Style
 

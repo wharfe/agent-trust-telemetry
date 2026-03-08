@@ -31,7 +31,34 @@ agent-trust-telemetry makes this visible by adding **security semantics over tra
 - Prove agent capability authenticity
 - Automate legal liability boundaries
 
-## Quick Start
+## 3-Minute Repro (LangGraph)
+
+```bash
+git clone https://github.com/wharfe/agent-trust-telemetry.git
+cd agent-trust-telemetry
+pip install -e ".[dev,langgraph]"
+python examples/langgraph/multi_agent_contamination.py
+```
+
+Expected behavior:
+
+- `agent_a` is flagged with `action=quarantine` (poisoned instruction detected)
+- downstream nodes inherit contamination context and remain quarantined
+- ancestor chain is preserved for traceability across hops
+
+## LangGraph Minimal Integration
+
+```python
+from att.integrations.langgraph import TrustTelemetryCallback
+
+callback = TrustTelemetryCallback()
+result = graph.invoke(
+    {"messages": messages},
+    config={"callbacks": [callback]},
+)
+```
+
+## CLI Quick Start
 
 ```bash
 pip install agent-trust-telemetry
@@ -103,21 +130,19 @@ MVP implements Layer 1 only. The core evaluation engine has **zero external LLM 
 - [x] OTel span/event export
 - [x] End-to-end demo (Docker Compose + Jaeger)
 
-## Documentation
-
-| Document | Description |
-|---|---|
-| [Concept v4](docs/concept-v4.md) | Design philosophy and background |
-| [MVP Requirements v0.3](docs/mvp-requirements-v0.3.md) | Detailed MVP specification |
-| [ADR-001](docs/ADR-001-execution-phase.md) | execution_phase management |
-| [ADR-002](docs/ADR-002-propagation-and-quarantine.md) | Propagation confidence and quarantine |
-| [ADR-003](docs/ADR-003-tool-metadata-and-redaction.md) | Tool metadata drift and redaction |
-| [Execution Phases](docs/execution_phases.md) | Recommended execution_phase values |
-| [Future Considerations](docs/future-considerations.md) | Post-MVP extension candidates |
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## Security
+
+To report a vulnerability privately, use GitHub Security Advisories:
+
+- https://github.com/wharfe/agent-trust-telemetry/security/advisories/new
+
+For non-sensitive security discussion, open an issue:
+
+- https://github.com/wharfe/agent-trust-telemetry/issues
 
 ## License
 

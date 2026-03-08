@@ -39,6 +39,12 @@ demo/results.jsonl
 # Review notes (local only)
 .reviews/
 
+# Claude Code local settings
+.claude/settings.local.json
+
+# Internal docs (specs, ADRs, outreach — not part of OSS)
+docs/
+
 # Environment
 .env
 .env.local
