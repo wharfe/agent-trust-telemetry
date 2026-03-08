@@ -15,15 +15,15 @@
   weight: 1.0
 
 - id: "rule:exfiltration:002"
-  description: "Detects webhook or callback exfiltration patterns"
+  description: "Detects webhook or callback exfiltration patterns with sensitive data"
   targets:
     - field: "content"
     - field: "tool_context.description_raw"
-  pattern: "(call|invoke|trigger|hit|fetch|request) .*(webhook|callback|endpoint|external (api|server|service|url))"
+  pattern: "(call|invoke|trigger|hit) .*(webhook|callback).*(with|containing|including|sending) .*(data|secret|key|token|credential|password|user)"
   match_type: "regex_case_insensitive"
   policy_class: "exfiltration_attempt"
-  confidence: 0.70
-  severity: "medium"
+  confidence: 0.75
+  severity: "high"
   weight: 1.0
 
 - id: "rule:exfiltration:003"

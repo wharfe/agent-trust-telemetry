@@ -16,11 +16,11 @@
   weight: 1.0
 
 - id: "rule:tool_misuse:002"
-  description: "Detects requests to use a tool for unintended purposes"
+  description: "Detects requests to abuse or exploit a tool for destructive purposes"
   targets:
     - field: "content"
     - field: "tool_context.description_raw"
-  pattern: "(use|abuse|exploit|leverage|repurpose) (the |this )?(tool|function|api|endpoint|capability) (to|for) .*(delete|destroy|modify|overwrite|drop|truncate|corrupt|wipe)"
+  pattern: "(abuse|exploit|repurpose|misuse) (the |this )?(tool|function|api|endpoint|capability) (to|for) .*(delete|destroy|overwrite|drop|truncate|corrupt|wipe|exfiltrate)"
   match_type: "regex_case_insensitive"
   policy_class: "tool_misuse_attempt"
   confidence: 0.80
