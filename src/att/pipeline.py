@@ -28,10 +28,12 @@ class EvaluationPipeline:
         self,
         rules_dir: Path | None = None,
         inheritance_config: InheritanceConfig | None = None,
+        otel_enabled: bool = False,
     ) -> None:
         self._rules = load_rules(rules_dir or DEFAULT_RULES_DIR)
         self._inheritance_config = inheritance_config or InheritanceConfig()
         self._metadata_tracker = MetadataTracker()
+        self._otel_enabled = otel_enabled
         # Cache of message_id -> evaluation output for parent lookups
         self._results_cache: dict[str, dict[str, Any]] = {}
 
@@ -85,6 +87,12 @@ class EvaluationPipeline:
             "evidence": result.evidence,
             "recommended_action": result.recommended_action,
         }
+
+        # OTel export (optional)
+        if self._otel_enabled:
+            from att.exporters.otel import export_evaluation
+
+            export_evaluation(output)
 
         # Cache for parent lookups
         self._results_cache[message_id] = output

@@ -148,6 +148,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Custom rules directory (default: builtin rules)",
     )
+    eval_parser.add_argument(
+        "--otel",
+        action="store_true",
+        default=False,
+        help="Enable OpenTelemetry export (requires otel extras)",
+    )
 
     # report
     report_parser = subparsers.add_parser("report", help="Display evaluation results")
@@ -186,7 +192,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "evaluate":
         rules_dir = Path(args.rules_dir) if args.rules_dir else None
-        pipeline = EvaluationPipeline(rules_dir=rules_dir)
+        pipeline = EvaluationPipeline(rules_dir=rules_dir, otel_enabled=args.otel)
         if args.message:
             _evaluate_message(pipeline, args.message)
         else:
