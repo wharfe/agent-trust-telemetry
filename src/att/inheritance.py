@@ -20,6 +20,9 @@ class InheritanceConfig:
     enabled: bool = True
     parent_action_threshold: list[str] | None = None
     propagated_confidence: float = 0.7
+    # max_hops is defined for forward-compatibility with multi-hop inheritance
+    # (Layer 3). MVP enforces one-hop only (ADR-002). The pipeline currently
+    # performs a single parent lookup, so max_hops > 1 has no effect yet.
     max_hops: int = 1
 
     def __post_init__(self) -> None:

@@ -6,7 +6,7 @@ import pytest
 
 from att.evaluator import evaluate_message, load_rules
 
-RULES_DIR = Path(__file__).resolve().parents[1] / "rules" / "builtin"
+RULES_DIR = Path(__file__).resolve().parents[1] / "src" / "att" / "rules" / "builtin"
 
 
 @pytest.fixture

@@ -18,22 +18,6 @@ from att.exporters.otel import (
 )
 
 
-def _setup_tracer() -> tuple[trace.Tracer, InMemorySpanExporter]:
-    """Set up an in-memory tracer for testing."""
-    exporter = InMemorySpanExporter()
-    provider = TracerProvider()
-    provider.add_span_processor(
-        trace.get_tracer_provider()
-        .__class__.__mro__[0]
-        .__init__  # type: ignore[union-attr]
-        and __import__(
-            "opentelemetry.sdk.trace.export", fromlist=["SimpleSpanProcessor"]
-        ).SimpleSpanProcessor(exporter)
-    )
-    trace.set_tracer_provider(provider)
-    return provider.get_tracer("test"), exporter
-
-
 def _get_tracer_and_exporter() -> tuple[trace.Tracer, InMemorySpanExporter]:
     """Create a fresh tracer with in-memory exporter."""
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -221,7 +205,7 @@ class TestPipelineOtelIntegration:
         assert len(spans) == 1
 
         attrs = dict(spans[0].attributes or {})
-        assert attrs[ATTR_RISK_SCORE] > 0
+        assert int(attrs[ATTR_RISK_SCORE]) > 0  # type: ignore[arg-type]
         assert attrs[ATTR_RECOMMENDED_ACTION] in ("warn", "quarantine", "block")
 
         assert "trace_refs" in result

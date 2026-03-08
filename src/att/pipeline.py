@@ -14,7 +14,7 @@ from att.inheritance import InheritanceConfig, check_parent_propagation
 from att.metadata import MetadataTracker
 from att.scorer import ScoringResult, score
 
-DEFAULT_RULES_DIR = Path(__file__).resolve().parents[2] / "rules" / "builtin"
+DEFAULT_RULES_DIR = Path(__file__).resolve().parent / "rules" / "builtin"
 
 
 class EvaluationPipeline:
@@ -49,7 +49,8 @@ class EvaluationPipeline:
         findings: list[Finding] = evaluate_message(envelope, self._rules)
 
         # Tool metadata drift check
-        tool_ctx = envelope.get("tool_context") or {}
+        raw_tool_ctx = envelope.get("tool_context")
+        tool_ctx = raw_tool_ctx if isinstance(raw_tool_ctx, dict) else {}
         drift_finding = self._metadata_tracker.check(
             session_id=envelope.get("session_id", ""),
             sender=envelope.get("sender", ""),

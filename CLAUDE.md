@@ -207,8 +207,8 @@ risk_inheritance:
 ```
 src/schemas/envelope.json          # Message Envelope の JSON Schema (Draft 2020-12)
 src/schemas/output.json            # Output Contract の JSON Schema
-rules/builtin/instruction_override.yaml
-rules/builtin/hidden_instruction.yaml
+src/att/rules/builtin/instruction_override.yaml
+src/att/rules/builtin/hidden_instruction.yaml
 tests/schemas/test_envelope.py     # 正例・負例のバリデーションテスト
 ```
 
@@ -241,12 +241,12 @@ agent-trust-telemetry/
 │       ├── taxonomy.py
 │       ├── scorer.py
 │       ├── inheritance.py
+│       ├── rules/
+│       │   └── builtin/
+│       │       ├── instruction_override.yaml
+│       │       └── hidden_instruction.yaml
 │       └── exporters/
 │           └── otel.py
-├── rules/
-│   └── builtin/
-│       ├── instruction_override.yaml
-│       └── hidden_instruction.yaml
 ├── tests/
 │   └── schemas/
 │       └── test_envelope.py
