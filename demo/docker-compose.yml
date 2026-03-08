@@ -1,0 +1,22 @@
+services:
+  # Jaeger — trace visualization UI
+  jaeger:
+    image: jaegertracing/jaeger:2
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  # Demo runner — evaluates scenario and exports to Jaeger
+  demo:
+    build:
+      context: ..
+      dockerfile: demo/Dockerfile
+    depends_on:
+      - jaeger
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_EXPORTER_OTLP_INSECURE=true
+    command: ["python", "demo/run_demo.py", "--otel"]

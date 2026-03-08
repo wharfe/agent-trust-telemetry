@@ -33,6 +33,9 @@ htmlcov/
 Thumbs.db
 *:Zone.Identifier
 
+# Demo output
+demo/results.jsonl
+
 # Environment
 .env
 .env.local
