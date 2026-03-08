@@ -6,7 +6,7 @@
   targets:
     - field: "content"
     - field: "tool_context.description_raw"
-  pattern: "[\\x{200B}\\x{200C}\\x{200D}\\x{2060}\\x{FEFF}\\x{00AD}\\x{200E}\\x{200F}\\x{202A}-\\x{202E}\\x{2066}-\\x{2069}]"
+  pattern: "[\u200b\u200c\u200d\u2060\ufeff\u00ad\u200e\u200f\u202a-\u202e\u2066-\u2069]"
   match_type: "regex"
   anomaly_indicator: "hidden_instruction_embedding"
   confidence: 0.90
