@@ -35,6 +35,10 @@ otel = [
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
 ]
+langgraph = [
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
@@ -89,4 +93,12 @@ warn_return_any = false
 
 [[tool.mypy.overrides]]
 module = "jsonschema.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "langgraph.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "langchain_core.*"
 ignore_missing_imports = true
