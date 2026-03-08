@@ -121,7 +121,7 @@ MVP implements Layer 1 only. The core evaluation engine has **zero external LLM 
 
 - [x] Message Envelope Schema (JSON Schema Draft 2020-12)
 - [x] Policy Violation Taxonomy v0.1
-- [x] ADR-001 through ADR-003
+- [x] Architectural decisions documented (execution phases, propagation, tool metadata)
 - [x] JSON Schema validation (envelope + output contract)
 - [x] Layer 1 evaluation engine (regex pattern matching)
 - [x] One-hop risk inheritance
