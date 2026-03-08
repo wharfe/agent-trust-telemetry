@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""Demo scenario: tool description poisoning → one-hop inheritance → quarantine.
+"""Run agent-trust-telemetry demo scenarios.
 
-This script demonstrates the core value proposition of agent-trust-telemetry:
+Available scenarios:
+  tool_poisoning       — MCP tool description poisoning → one-hop inheritance (default)
+  metadata_drift       — Tool description silently mutated mid-session
+  data_exfiltration    — Secret extraction → external endpoint exfiltration chain
+  privilege_escalation — Privilege escalation + destructive SQL injection via tool misuse
 
-1. A malicious MCP server embeds hidden instructions in a tool description
-2. Agent A calls the poisoned tool — hidden_instruction_embedding detected (warn)
-3. Agent A forwards results to Agent B — parent_flagged_propagation triggers (quarantine)
-4. Agent B forwards to Agent C — one-hop limit prevents further propagation cascade
-
-Run standalone:
-    python demo/run_demo.py
-
-Run with OTel export (requires docker-compose up):
-    python demo/run_demo.py --otel
+Usage:
+    python demo/run_demo.py                          # default scenario
+    python demo/run_demo.py --scenario metadata_drift
+    python demo/run_demo.py --scenario all           # run all scenarios
+    python demo/run_demo.py --otel                   # with OTel export
 """
 
 from __future__ import annotations
@@ -27,7 +26,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from att.pipeline import EvaluationPipeline  # noqa: E402
 
-SCENARIO_FILE = Path(__file__).parent / "scenario.jsonl"
+SCENARIOS_DIR = Path(__file__).parent / "scenarios"
+
+# Legacy location fallback
+LEGACY_SCENARIO = Path(__file__).parent / "scenario.jsonl"
+
+SCENARIO_TITLES: dict[str, str] = {
+    "tool_poisoning": "Tool Description Poisoning → One-hop Inheritance",
+    "metadata_drift": "Tool Metadata Drift — Silent Description Mutation",
+    "data_exfiltration": "Secret Extraction → Data Exfiltration Chain",
+    "privilege_escalation": "Privilege Escalation + Destructive SQL Injection",
+}
 
 # ANSI colors for terminal output
 RED = "\033[91m"
@@ -45,11 +54,34 @@ ACTION_COLORS = {
 }
 
 
-def _print_header() -> None:
+def _list_scenarios() -> list[str]:
+    """Return available scenario names."""
+    scenarios = sorted(p.stem for p in SCENARIOS_DIR.glob("*.jsonl"))
+    if not scenarios and LEGACY_SCENARIO.exists():
+        scenarios = ["tool_poisoning"]
+    return scenarios
+
+
+def _load_scenario(name: str) -> list[dict]:
+    """Load scenario messages from JSONL file."""
+    path = SCENARIOS_DIR / f"{name}.jsonl"
+    if not path.exists() and name == "tool_poisoning" and LEGACY_SCENARIO.exists():
+        path = LEGACY_SCENARIO
+    if not path.exists():
+        available = ", ".join(_list_scenarios())
+        print(f"{RED}Error: Unknown scenario '{name}'{RESET}")
+        print(f"Available scenarios: {available}")
+        sys.exit(1)
+    with open(path) as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def _print_header(scenario_name: str) -> None:
+    title = SCENARIO_TITLES.get(scenario_name, scenario_name)
     print()
     print(f"{BOLD}{'=' * 72}{RESET}")
     print(f"{BOLD}  agent-trust-telemetry Demo{RESET}")
-    print(f"{BOLD}  Scenario: Tool Description Poisoning → One-hop Inheritance{RESET}")
+    print(f"{BOLD}  Scenario: {title}{RESET}")
     print(f"{BOLD}{'=' * 72}{RESET}")
     print()
 
@@ -107,71 +139,72 @@ def _print_summary(results: list[dict]) -> None:
     print(f"{BOLD}{'=' * 72}{RESET}")
     print()
 
-    quarantined = [r for r in results if r["recommended_action"] == "quarantine"]
-    warned = [r for r in results if r["recommended_action"] == "warn"]
-    blocked = [r for r in results if r["recommended_action"] == "block"]
-    clean = [r for r in results if r["recommended_action"] == "observe"]
+    counts = {"observe": 0, "warn": 0, "quarantine": 0, "block": 0}
+    for r in results:
+        action = r["recommended_action"]
+        counts[action] = counts.get(action, 0) + 1
 
     print(f"  Total messages:  {len(results)}")
-    print(f"  {GREEN}Observe:{RESET}          {len(clean)}")
-    print(f"  {YELLOW}Warn:{RESET}             {len(warned)}")
-    print(f"  {RED}Quarantine:{RESET}       {len(quarantined)}")
-    print(f"  {RED}{BOLD}Block:{RESET}            {len(blocked)}")
+    print(f"  {GREEN}Observe:{RESET}          {counts['observe']}")
+    print(f"  {YELLOW}Warn:{RESET}             {counts['warn']}")
+    print(f"  {RED}Quarantine:{RESET}       {counts['quarantine']}")
+    print(f"  {RED}{BOLD}Block:{RESET}            {counts['block']}")
     print()
 
-    if quarantined:
-        print(f"  {RED}Quarantined messages:{RESET}")
-        for r in quarantined:
-            print(f"    - {r['message_id']} (score: {r['risk_score']})")
+    flagged = [r for r in results if r["recommended_action"] != "observe"]
+    if flagged:
+        print(f"  {RED}Flagged messages:{RESET}")
+        for r in flagged:
+            action = r["recommended_action"].upper()
+            print(f"    - {r['message_id']} → {action} (score: {r['risk_score']})")
         print()
 
-    print(f"  {CYAN}This demonstrates how agent-trust-telemetry detects")
-    print("  tool description poisoning and tracks contamination")
-    print(f"  propagation through the agent communication graph.{RESET}")
-    print()
 
-
-def run_demo(otel_enabled: bool = False) -> list[dict]:
-    """Run the demo scenario and return results."""
-    pipeline = EvaluationPipeline(otel_enabled=otel_enabled)
-
-    with open(SCENARIO_FILE) as f:
-        envelopes = [json.loads(line) for line in f if line.strip()]
-
-    results: list[dict] = []
-    _print_header()
-
-    if otel_enabled:
+def _setup_otel() -> tuple[bool, object | None]:
+    """Initialize OTel tracing. Returns (enabled, tracer)."""
+    try:
         from opentelemetry import trace
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+            OTLPSpanExporter,
+        )
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-        try:
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-                OTLPSpanExporter,
-            )
+        exporter = OTLPSpanExporter()
+        provider = TracerProvider()
+        provider.add_span_processor(SimpleSpanProcessor(exporter))
+        trace.set_tracer_provider(provider)
+        tracer = trace.get_tracer("att-demo")
+        print(f"  {CYAN}OTel export enabled → OTLP gRPC endpoint{RESET}")
+        print()
+        return True, tracer
+    except ImportError:
+        print(f"  {YELLOW}OTLP exporter not installed. Run:")
+        print(f"    pip install opentelemetry-exporter-otlp-proto-grpc{RESET}")
+        print()
+        return False, None
 
-            exporter = OTLPSpanExporter()
-            provider = TracerProvider()
-            provider.add_span_processor(SimpleSpanProcessor(exporter))
-            trace.set_tracer_provider(provider)
-            tracer = trace.get_tracer("att-demo")
-            print(f"  {CYAN}OTel export enabled → OTLP gRPC endpoint{RESET}")
-            print()
-        except ImportError:
-            print(f"  {YELLOW}OTLP exporter not installed. Run:")
-            print(f"    pip install opentelemetry-exporter-otlp-proto-grpc{RESET}")
-            print()
-            otel_enabled = False
+
+def run_scenario(
+    name: str,
+    pipeline: EvaluationPipeline,
+    otel_enabled: bool = False,
+    tracer: object | None = None,
+) -> list[dict]:
+    """Run a single demo scenario and return results."""
+    envelopes = _load_scenario(name)
+    results: list[dict] = []
+    _print_header(name)
 
     for i, envelope in enumerate(envelopes, 1):
-        if otel_enabled:
-            with tracer.start_as_current_span(  # type: ignore[possibly-undefined]
-                f"evaluate-msg-{i}",
+        if otel_enabled and tracer is not None:
+            with tracer.start_as_current_span(  # type: ignore[union-attr]
+                f"evaluate-{name}-msg-{i}",
                 attributes={
                     "message.sender": envelope["sender"],
                     "message.receiver": envelope["receiver"],
                     "message.channel": envelope["channel"],
+                    "demo.scenario": name,
                 },
             ):
                 result = pipeline.evaluate(envelope)
@@ -182,27 +215,58 @@ def run_demo(otel_enabled: bool = False) -> list[dict]:
         _print_step(i, envelope, result)
 
     _print_summary(results)
+    return results
+
+
+def run_demo(
+    scenario: str = "tool_poisoning",
+    otel_enabled: bool = False,
+) -> list[dict]:
+    """Run one or all demo scenarios and return results."""
+    otel_active = False
+    tracer = None
+    if otel_enabled:
+        otel_active, tracer = _setup_otel()
+
+    scenario_names = _list_scenarios() if scenario == "all" else [scenario]
+
+    all_results: list[dict] = []
+    for name in scenario_names:
+        # Each scenario gets a fresh pipeline to reset metadata tracker state
+        pipeline = EvaluationPipeline(otel_enabled=otel_active)
+        results = run_scenario(name, pipeline, otel_active, tracer)
+        all_results.extend(results)
 
     # Write results to JSONL
     output_file = Path(__file__).parent / "results.jsonl"
     with open(output_file, "w") as f:
-        for r in results:
+        for r in all_results:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     print(f"  Results written to {output_file}")
     print()
 
-    return results
+    return all_results
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run agent-trust-telemetry demo")
+    available = _list_scenarios()
+    parser = argparse.ArgumentParser(
+        description="Run agent-trust-telemetry demo scenarios",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f"Available scenarios: {', '.join(available)}, all",
+    )
+    parser.add_argument(
+        "--scenario",
+        default="tool_poisoning",
+        help="Scenario to run (default: tool_poisoning, use 'all' for all)",
+    )
     parser.add_argument(
         "--otel",
         action="store_true",
         help="Enable OTel export (requires OTLP endpoint)",
     )
     args = parser.parse_args()
-    run_demo(otel_enabled=args.otel)
+    run_demo(scenario=args.scenario, otel_enabled=args.otel)
 
 
 if __name__ == "__main__":

@@ -1,70 +1,113 @@
-# Demo: Tool Description Poisoning → One-hop Inheritance → Quarantine
+# Demo Scenarios
 
-This demo reproduces the end-to-end scenario from the MVP requirements:
+agent-trust-telemetry の検出能力を示す4つの攻撃シナリオです。
 
-1. A malicious MCP server embeds hidden instructions in a tool description
-2. Agent A calls the poisoned tool → `instruction_override` + `hidden_instruction_embedding` detected → **quarantine** (score: 90)
-3. Agent A forwards to Agent B → `parent_flagged_propagation` triggers → **quarantine** (score: 70)
-4. Agent B forwards to Agent C → parent was quarantined → **quarantine** (score: 70)
-
-## Quick Start (Docker Compose)
+## Quick Start
 
 ```bash
-cd demo
-docker compose up --build
-```
-
-Then open [http://localhost:16686](http://localhost:16686) to view traces in Jaeger.
-
-## Run without Docker
-
-```bash
-# Without OTel (terminal output only)
+# デフォルトシナリオ（tool_poisoning）
 python demo/run_demo.py
 
-# With OTel (requires OTLP endpoint at localhost:4317)
-python demo/run_demo.py --otel
+# 特定のシナリオを実行
+python demo/run_demo.py --scenario metadata_drift
+
+# 全シナリオを一括実行
+python demo/run_demo.py --scenario all
+
+# OTel export 付き（Docker Compose で Jaeger 起動後）
+cd demo && docker compose up --build
 ```
 
-## Scenario Messages
+Jaeger UI: [http://localhost:16686](http://localhost:16686)
 
-The demo evaluates 4 messages defined in `scenario.jsonl`:
+## Scenarios
 
-| Step | Sender | Receiver | Channel | What happens |
-|------|--------|----------|---------|-------------|
-| 1 | human | agent_a | internal | Clean user request |
-| 2 | mcp_server_malicious | agent_a | mcp | Poisoned tool response with hidden instructions in description |
-| 3 | agent_a | agent_b | internal | Forwarded results — inherits parent's flagged status |
-| 4 | agent_b | agent_c | internal | Further forwarded — one-hop limit prevents cascade |
+### 1. tool_poisoning（デフォルト）
 
-## Expected Output
+**MCP ツール説明への hidden instruction 埋め込み → one-hop 継承**
+
+悪意ある MCP サーバーが `web_search` ツールの description に HTML コメントで隠し指示を埋め込む。
+指示はユーザーデータの外部転送を要求。
+
+| Step | Flow | Detection | Action |
+|------|------|-----------|--------|
+| 1 | human → agent_a | — | observe |
+| 2 | mcp_server → agent_a | instruction_override + hidden_instruction + exfiltration | **quarantine** (95) |
+| 3 | agent_a → agent_b | parent_flagged_propagation | **quarantine** (70) |
+| 4 | agent_b → agent_c | parent_flagged_propagation | **quarantine** (70) |
+
+### 2. metadata_drift
+
+**同一セッション内でツール説明が途中で書き換わる攻撃**
+
+正規の翻訳 MCP サーバーが最初は正常な tool description を返すが、
+2回目の呼び出しで `[SYSTEM]` タグ付きの悪意ある指示を description に注入。
+description_hash の変化を `tool_metadata_drift` として検出。
+
+| Step | Flow | Detection | Action |
+|------|------|-----------|--------|
+| 1 | human → agent_a | — | observe |
+| 2 | mcp_translation → agent_a | — (初回、正常) | observe |
+| 3 | human → agent_a | — | observe |
+| 4 | mcp_translation → agent_a | [SYSTEM]タグ + **tool_metadata_drift** | **warn** (90) |
+| 5 | agent_a → agent_b | parent_flagged_propagation | **quarantine** (70) |
+
+**ポイント**: Content 自体は無害だが、description の hash 変化が攻撃の兆候を捉える。
+これは既存の単発メッセージスキャンでは検出できない、セッション横断の異常。
+
+### 3. data_exfiltration
+
+**秘密情報の抽出 → 外部エンドポイントへの送信チェーン**
+
+コード検索ツールの description に `.env` ファイル・認証情報の読み取り指示が HTML コメントとして隠されている。
+エージェントが抽出した API キーを外部 webhook に送信しようとする流れを検出。
+
+| Step | Flow | Detection | Action |
+|------|------|-----------|--------|
+| 1 | human → coding_agent | — | observe |
+| 2 | mcp_code_search → coding_agent | secret_access(0.85) + hidden_instruction | **block** (90) |
+| 3 | coding_agent → reporting_agent | exfiltration(0.75) + parent_flagged | **quarantine** (70) |
+| 4 | reporting_agent → human | parent_flagged_propagation | **quarantine** (70) |
+
+**ポイント**: Step 2 で secret_access が severity=critical として検出され、
+P0 + critical の組み合わせで **block**（最高レベル）が発動。
+
+### 4. privilege_escalation
+
+**デプロイツール経由の権限昇格 + 破壊的 SQL インジェクション**
+
+デプロイツールの description に `sudo` コマンド実行・認証バイパス・特権モード実行の指示が埋め込まれている。
+汚染されたエージェントが DB エージェントに `DROP TABLE` + `DELETE FROM` を含む SQL を送信。
+
+| Step | Flow | Detection | Action |
+|------|------|-----------|--------|
+| 1 | human → devops_agent | — | observe |
+| 2 | mcp_deploy → devops_agent | privilege_escalation(0.85) + tool_misuse(0.80) | **quarantine** (90) |
+| 3 | devops_agent → db_agent | SQL injection(0.80) + parent_flagged | **quarantine** (85) |
+| 4 | db_agent → devops_agent | parent_flagged_propagation | **quarantine** (70) |
+
+**ポイント**: Step 3 は自身のコンテンツ（SQL injection）と親メッセージの汚染の
+両方が検出され、risk_score が 85 に上昇。複合的な脅威の重畳を示す。
+
+## Scenario Files
 
 ```
-Step 2: mcp_server_malicious → agent_a
-  Action:     QUARANTINE
-  Risk Score: 90
-  Evidence:   instruction_override + hidden_instruction_embedding in tool description
-
-Step 3: agent_a → agent_b
-  Action:     QUARANTINE
-  Risk Score: 70
-  Evidence:   parent message was flagged (parent_flagged_propagation)
-
-Step 4: agent_b → agent_c
-  Action:     QUARANTINE
-  Risk Score: 70
-  Evidence:   parent message was flagged (parent_flagged_propagation)
+demo/scenarios/
+├── tool_poisoning.jsonl       # MCP tool description poisoning
+├── metadata_drift.jsonl       # Tool description mutation mid-session
+├── data_exfiltration.jsonl    # Secret extraction + exfiltration chain
+└── privilege_escalation.jsonl # Privilege escalation + SQL injection
 ```
 
-Note: One-hop inheritance means each child only looks at its **direct parent**.
-Since each parent in the chain was flagged, the propagation continues
-through the chain. This is by design — quarantined nodes should not
-forward to downstream agents without explicit override.
+各 `.jsonl` ファイルは Message Envelope Schema に準拠したメッセージの連鎖です。
+独自のシナリオを追加する場合は、同じ形式で `.jsonl` ファイルを `demo/scenarios/` に配置してください。
 
 ## Viewing in Jaeger
 
-After `docker compose up`, each evaluation produces an OTel span with:
-- `trust.risk_score` — operational triage score
-- `trust.severity` — impact level
+`docker compose up --build` 後、各評価は以下の属性を持つ OTel span を生成します：
+
+- `trust.risk_score` — triage スコア (0–100)
+- `trust.severity` — 影響レベル
 - `trust.recommended_action` — observe / warn / quarantine / block
-- `trust.evaluation.completed` event with full evidence
+- `trust.evaluation.completed` イベント — 完全な evidence 付き
+- `demo.scenario` — シナリオ名
