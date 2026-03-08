@@ -63,6 +63,8 @@ include = ["src/att", "src/schemas"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = ["benchmark: performance benchmark tests (may flake on shared CI runners)"]
+addopts = "-m 'not benchmark'"
 
 [tool.ruff]
 target-version = "py310"

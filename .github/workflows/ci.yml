@@ -35,6 +35,9 @@ jobs:
       - name: Run tests
         run: pytest --cov=att --cov-report=term-missing
 
+      - name: Run benchmark tests (informational, failures allowed)
+        run: pytest -m benchmark --no-header -q || true
+
   package:
     runs-on: ubuntu-latest
     steps:

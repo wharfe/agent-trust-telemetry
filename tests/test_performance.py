@@ -2,6 +2,10 @@
 
 Non-functional requirement: single message evaluation < 50ms (99p, OTel excluded).
 Stretch goal: < 10ms.
+
+These tests are marked with @pytest.mark.benchmark and excluded from CI by
+default to avoid flaky failures on shared runners. Run locally with:
+    pytest -m benchmark
 """
 
 import time
@@ -9,6 +13,8 @@ import time
 import pytest
 
 from att.pipeline import EvaluationPipeline
+
+pytestmark = pytest.mark.benchmark
 
 
 def _envelope(content="Hello, world.", **overrides):

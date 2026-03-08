@@ -28,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - End-to-end demo scenario: tool poisoning → one-hop inheritance → quarantine
 - Docker Compose demo with Jaeger for trace visualization
 - Input validation: TypeError for non-dict envelopes, resilient stream processing with error recovery
-- Comprehensive test suite (226 tests) with positive/negative cases for all rules
+- Comprehensive test suite with positive/negative cases for all rules
+- Performance tests verifying single-message evaluation meets 50ms p99 SLO
 
 ### Fixed
 - Builtin rules packaged inside `src/att/rules/builtin/` to ensure inclusion in wheel distributions

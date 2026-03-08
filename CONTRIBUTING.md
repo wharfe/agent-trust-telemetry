@@ -23,7 +23,7 @@ pytest
 ruff check src/ tests/
 
 # Run type checker
-mypy src/
+mypy src/ tests/
 ```
 
 ## Commit Message Convention
